@@ -39,13 +39,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        if (email != null && SecurityContextHolder.getContext().getAuthentication() != null) {
+        // 수정된 부분: getAuthentication()이 null일 때 인증 로직을 수행해야 합니다.
+        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (jwtUtil.validateToken(jwt, email) && jwtUtil.isAccessToken(jwt)) {
                 String role = jwtUtil.extractRole(jwt);
-                UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(email, null,
-                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role)));
+
+                // ROLE_ 접두사를 붙여서 권한을 생성 (SecurityConfig의 hasRole과 매칭)
+                UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                        email,
+                        null,
+                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role))
+                );
 
                 authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                // SecurityContext에 인증 객체 저장
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
             }
         }
